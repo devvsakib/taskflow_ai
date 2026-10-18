@@ -23,57 +23,7 @@ import { ProjectIssueActions } from "@/components/issues/project-issue-actions";
 import { IssueDetailsDialog } from "@/components/issues/issue-details-dialog";
 import { toast } from "sonner";
 import { ProjectIssuesTable } from "@/components/issues/project-issues-table";
-
-const statusConfig = {
-    backlog: {
-        label: "Backlog",
-        className: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
-    },
-    todo: {
-        label: "Todo",
-        className: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300",
-    },
-    in_progress: {
-        label: "In Progress",
-        className: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-300",
-    },
-    in_review: {
-        label: "In Review",
-        className: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300",
-    },
-    done: {
-        label: "Done",
-        className: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300",
-    },
-};
-
-const priorityConfig = {
-    urgent: {
-        label: "Urgent",
-        className: "text-rose-600 dark:text-rose-400",
-        icon: "!",
-    },
-    high: {
-        label: "High",
-        className: "text-orange-600 dark:text-orange-400",
-        icon: "↑",
-    },
-    medium: {
-        label: "Medium",
-        className: "text-amber-600 dark:text-amber-400",
-        icon: "→",
-    },
-    low: {
-        label: "Low",
-        className: "text-sky-600 dark:text-sky-400",
-        icon: "↓",
-    },
-    none: {
-        label: "None",
-        className: "text-muted-foreground",
-        icon: "—",
-    },
-};
+import { ProjectSettingsDialog } from "@/components/projects/project-settings-dialog";
 
 export default async function ProjectDetailsPage({ params }) {
     const { projectId } = await params;
@@ -92,7 +42,7 @@ export default async function ProjectDetailsPage({ params }) {
     // Find the user's workspace membership.
     const { data: membership, error: membershipError } = await supabase
         .from("organization_members")
-        .select("organization_id")
+        .select("organization_id, role")
         .eq("user_id", claims.sub)
         .limit(1)
         .maybeSingle();
@@ -104,7 +54,7 @@ export default async function ProjectDetailsPage({ params }) {
     // Fetch the project within the user's workspace.
     const { data: project, error: projectError } = await supabase
         .from("projects")
-        .select("id, name, key, description, status, created_at")
+        .select("id, organization_id, name, key, description, status, created_at")
         .eq("id", projectId)
         .eq("organization_id", membership.organization_id)
         .maybeSingle();
@@ -170,8 +120,6 @@ export default async function ProjectDetailsPage({ params }) {
         };
     });
 
-    console.log("members", members);
-
     return (
         <main className="min-h-screen bg-background">
             <div className="mx-auto max-w-7xl space-y-8 p-6 md:p-8">
@@ -205,11 +153,17 @@ export default async function ProjectDetailsPage({ params }) {
                         </div>
                     </div>
 
-                    <ProjectIssueActions
-                        projectId={project.id}
-                        organizationId={membership.organization_id}
-                        members={members}
-                    />
+                    <div>
+                        <ProjectSettingsDialog
+                            project={project}
+                            role={membership.role}
+                        />
+                        <ProjectIssueActions
+                            projectId={project.id}
+                            organizationId={membership.organization_id}
+                            members={members}
+                        />
+                    </div>
                 </div>
 
                 {/* Project overview */}

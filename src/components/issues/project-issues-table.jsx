@@ -83,7 +83,7 @@ export function ProjectIssuesTable({
     const [status, setStatus] = useState("all");
     const [priority, setPriority] = useState("all");
     const [assignee, setAssignee] = useState("all");
-    const [selectedIssue, setSelectedIssue] = useState({});
+    const [selectedIssue, setSelectedIssue] = useState(null);
     const [view, setView] = useState("list");
 
     const filteredIssues = useMemo(() => {
@@ -331,7 +331,6 @@ export function ProjectIssuesTable({
                     </Table>
                 )}
             </div>
-
             <IssueDetailsDialog
                 key={selectedIssue?.id || "no-selected-issue"}
                 issue={selectedIssue}
@@ -340,8 +339,10 @@ export function ProjectIssuesTable({
                 projectKey={projectKey}
                 members={members}
                 open={Boolean(selectedIssue)}
-                onOpenChange={(open) => {
-                    if (!open) setSelectedIssue(null);
+                onOpenChange={(isOpen) => {
+                    if (!isOpen) {
+                        setSelectedIssue(null);
+                    }
                 }}
             />
         </div>
