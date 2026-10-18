@@ -47,12 +47,12 @@ export default function DashboardSidebar({ workspace, projects = [] }) {
         <aside className="flex h-full w-[250px] shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground">
             <div className="p-4">
                 <DropdownMenu>
-                    <DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild>
                         <Button
                             variant="ghost"
                             className="h-auto w-full justify-between px-2 py-2 hover:bg-sidebar-accent"
                         >
-                            <span className="flex min-w-0 items-center gap-3">
+                            <div className="flex min-w-0 items-center gap-3">
                                 <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                                     <Zap className="size-5" />
                                 </span>
@@ -64,7 +64,7 @@ export default function DashboardSidebar({ workspace, projects = [] }) {
                                         Workspace
                                     </span>
                                 </span>
-                            </span>
+                            </div>
                             <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                         </Button>
                     </DropdownMenuTrigger>
