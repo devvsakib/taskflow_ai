@@ -29,7 +29,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-
+import { statusConfig, priorityConfig } from "@/lib/issues/issue-config";
 const statuses = [
     { value: "backlog", label: "Backlog" },
     { value: "todo", label: "Todo" },

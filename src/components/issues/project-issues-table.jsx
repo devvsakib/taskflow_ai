@@ -25,6 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { IssueDetailsDialog } from "@/components/issues/issue-details-dialog";
 import { IssueKanbanBoard } from "@/components/issues/issue-kanban-board";
+import { statusConfig, priorityConfig } from "@/lib/issues/issue-config";
 
 const statuses = [
     { value: "backlog", label: "Backlog" },
@@ -278,18 +279,21 @@ export function ProjectIssuesTable({
                                         <TableCell>
                                             <Badge
                                                 variant="secondary"
-                                                className={statusStyles[issue.status] || ""}
+                                                className={statusConfig[issue.status].className || ""}
                                             >
-                                                {formatLabel(issue.status, statuses)}
+                                                <span>{statusConfig[issue.status].label}</span>
                                             </Badge>
                                         </TableCell>
 
                                         <TableCell>
                                             <Badge
                                                 variant="secondary"
-                                                className={priorityStyles[issue.priority] || ""}
+                                                className={priorityConfig[issue.priority].className || ""}
                                             >
-                                                {formatLabel(issue.priority, priorities)}
+                                                <div className="space-x-1">
+                                                    <span>{priorityConfig[issue.priority].icon}</span>
+                                                    <span>{priorityConfig[issue.priority].label}</span>
+                                                </div>
                                             </Badge>
                                         </TableCell>
 

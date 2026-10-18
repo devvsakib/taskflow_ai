@@ -45,6 +45,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { statusConfig, priorityConfig } from "@/lib/issues/issue-config";
+import { cn } from "cn";
 
 const statuses = [
     { value: "backlog", label: "Backlog" },
@@ -74,10 +76,6 @@ function formatDate(value) {
 
 function getStatusLabel(value) {
     return statuses.find((item) => item.value === value)?.label || value;
-}
-
-function getPriorityLabel(value) {
-    return priorities.find((item) => item.value === value)?.label || value;
 }
 
 export function IssueDetailsDialog({
@@ -390,8 +388,8 @@ export function IssueDetailsDialog({
                                             Status
                                         </div>
 
-                                        <p className="text-sm font-medium">
-                                            {getStatusLabel(issue.status)}
+                                        <p className={cn("text-sm font-medium inline", statusConfig[issue.status].className)}>
+                                            {statusConfig[issue.status].label}
                                         </p>
                                     </div>
 
@@ -401,8 +399,11 @@ export function IssueDetailsDialog({
                                             Priority
                                         </div>
 
-                                        <p className="text-sm font-medium">
-                                            {getPriorityLabel(issue.priority)}
+                                        <p className={cn("text-sm font-medium", priorityConfig[issue.priority].className)}>
+                                            <div className="space-x-1">
+                                                <span>{priorityConfig[issue.priority].icon}</span>
+                                                <span>{priorityConfig[issue.priority].label}</span>
+                                            </div>
                                         </p>
                                     </div>
 
