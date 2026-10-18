@@ -19,6 +19,11 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { useState } from "react";
+import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 function MetricCard({ title, value, description, icon: Icon }) {
     return (
@@ -40,6 +45,11 @@ export default function DashboardOverview({
     projects = [],
     issues = [],
 }) {
+    const router = useRouter();
+    const supabase = createClient();
+    const [createProjectOpen, setCreateProjectOpen] = useState(false);
+    const [isCreatingProject, setIsCreatingProject] = useState(false);
+
     const inProgress = issues.filter(
         (issue) => issue.status === "in_progress"
     ).length;
@@ -51,6 +61,46 @@ export default function DashboardOverview({
     const activeProjects = projects.filter(
         (project) => project.status === "active"
     ).length;
+
+    const handleCreateProject = async (project) => {
+        setIsCreatingProject(true);
+
+        try {
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+            if (userError || !user) {
+                toast.error("Your session has expired. Please login again.")
+            }
+
+            const { error } = await supabase.from("projects").insert({
+                organization_id: workspace.id,
+                name: project.name,
+                key: project.key,
+                description: project.description || null,
+                created_by: user.id
+            })
+
+            if (error) {
+                if (error.code === "23505") {
+                    toast.error(
+                        "This project key is already in use in your workspace."
+                    );
+                }
+
+                if (error.code === "42501") {
+                    toast.error(
+                        "You don't have permission to create a project in this workspace."
+                    );
+                }
+
+                toast.error(error.message || "Couldn't create the project.");
+            }
+            setCreateProjectOpen(false);
+            router.refresh();
+        } finally {
+            setIsCreatingProject(false);
+        }
+    }
 
     return (
         <div className="mx-auto w-full max-w-7xl space-y-8 p-5 sm:p-8">
@@ -70,9 +120,7 @@ export default function DashboardOverview({
                 </div>
 
                 <Button
-                    onClick={() =>
-                        window.dispatchEvent(new Event("taskflow:new-project"))
-                    }
+                    onClick={() => setCreateProjectOpen(true)}
                 >
                     <Plus className="size-4" />
                     New project
@@ -166,9 +214,7 @@ export default function DashboardOverview({
                                 </p>
                                 <Button
                                     className="mt-5"
-                                    onClick={() =>
-                                        window.dispatchEvent(new Event("taskflow:new-project"))
-                                    }
+                                    onClick={() => setCreateProjectOpen(true)}
                                 >
                                     <Plus className="size-4" />
                                     Create a project
@@ -228,6 +274,12 @@ export default function DashboardOverview({
                         </div>
                     </CardContent>
                 </Card>
+                <CreateProjectDialog
+                    open={createProjectOpen}
+                    onOpenChange={setCreateProjectOpen}
+                    onCreateProject={handleCreateProject}
+                    isSubmitting={isCreatingProject}
+                />
             </div>
         </div>
     );
