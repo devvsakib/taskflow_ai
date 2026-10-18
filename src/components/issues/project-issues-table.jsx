@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { LayoutGrid, List } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -22,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { IssueDetailsDialog } from "@/components/issues/issue-details-dialog";
+import { IssueKanbanBoard } from "@/components/issues/issue-kanban-board";
 
 const statuses = [
     { value: "backlog", label: "Backlog" },
@@ -81,6 +84,7 @@ export function ProjectIssuesTable({
     const [priority, setPriority] = useState("all");
     const [assignee, setAssignee] = useState("all");
     const [selectedIssue, setSelectedIssue] = useState({});
+    const [view, setView] = useState("list");
 
     const filteredIssues = useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -131,6 +135,30 @@ export function ProjectIssuesTable({
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div className="flex items-center justify-between gap-3">
+
+                    <div className="flex items-center rounded-lg border p-1">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={view === "list" ? "secondary" : "ghost"}
+                            onClick={() => setView("list")}
+                        >
+                            <List className="mr-2 size-4" />
+                            List
+                        </Button>
+
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={view === "board" ? "secondary" : "ghost"}
+                            onClick={() => setView("board")}
+                        >
+                            <LayoutGrid className="mr-2 size-4" />
+                            Board
+                        </Button>
+                    </div>
+                </div>
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -205,92 +233,103 @@ export function ProjectIssuesTable({
             </div>
 
             <div className="overflow-hidden rounded-lg border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[120px]">Issue</TableHead>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Priority</TableHead>
-                            <TableHead>Assignee</TableHead>
-                            <TableHead className="whitespace-nowrap">Due date</TableHead>
-                        </TableRow>
-                    </TableHeader>
+                {view === "board" ? (
+                    <IssueKanbanBoard
+                        issues={filteredIssues}
+                        projectId={projectId}
+                        organizationId={organizationId}
+                        projectKey={projectKey}
+                        members={members}
+                        onSelectIssue={setSelectedIssue}
+                    />
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[120px]">Issue</TableHead>
+                                <TableHead>Title</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Priority</TableHead>
+                                <TableHead>Assignee</TableHead>
+                                <TableHead className="whitespace-nowrap">Due date</TableHead>
+                            </TableRow>
+                        </TableHeader>
 
-                    <TableBody>
-                        {filteredIssues.map((issue) => {
-                            const assignedMember = members.find(
-                                (member) => member.id === issue.assignee_id
-                            );
+                        <TableBody>
+                            {filteredIssues.map((issue) => {
+                                const assignedMember = members.find(
+                                    (member) => member.id === issue.assignee_id
+                                );
 
-                            return (
-                                <TableRow
-                                    key={issue.id}
-                                    className="cursor-pointer"
-                                    onClick={() => setSelectedIssue(issue)}
-                                >
-                                    <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
-                                        {projectKey}-{issue.issue_number}
-                                    </TableCell>
+                                return (
+                                    <TableRow
+                                        key={issue.id}
+                                        className="cursor-pointer"
+                                        onClick={() => setSelectedIssue(issue)}
+                                    >
+                                        <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
+                                            {projectKey}-{issue.issue_number}
+                                        </TableCell>
 
-                                    <TableCell className="min-w-[180px] font-medium">
-                                        {issue.title}
-                                    </TableCell>
+                                        <TableCell className="min-w-[180px] font-medium">
+                                            {issue.title}
+                                        </TableCell>
 
-                                    <TableCell>
-                                        <Badge
-                                            variant="secondary"
-                                            className={statusStyles[issue.status] || ""}
-                                        >
-                                            {formatLabel(issue.status, statuses)}
-                                        </Badge>
-                                    </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant="secondary"
+                                                className={statusStyles[issue.status] || ""}
+                                            >
+                                                {formatLabel(issue.status, statuses)}
+                                            </Badge>
+                                        </TableCell>
 
-                                    <TableCell>
-                                        <Badge
-                                            variant="secondary"
-                                            className={priorityStyles[issue.priority] || ""}
-                                        >
-                                            {formatLabel(issue.priority, priorities)}
-                                        </Badge>
-                                    </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant="secondary"
+                                                className={priorityStyles[issue.priority] || ""}
+                                            >
+                                                {formatLabel(issue.priority, priorities)}
+                                            </Badge>
+                                        </TableCell>
 
-                                    <TableCell className="whitespace-nowrap">
-                                        {assignedMember?.full_name || "Unassigned"}
-                                    </TableCell>
+                                        <TableCell className="whitespace-nowrap">
+                                            {assignedMember?.full_name || "Unassigned"}
+                                        </TableCell>
 
-                                    <TableCell className="whitespace-nowrap text-muted-foreground">
-                                        {formatDate(issue.due_date)}
+                                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                                            {formatDate(issue.due_date)}
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+
+                            {filteredIssues.length === 0 && (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={6}
+                                        className="h-28 text-center text-muted-foreground"
+                                    >
+                                        {issues.length === 0
+                                            ? "No issues yet. Create your first issue."
+                                            : "No issues match your search or filters."}
+                                        {issues.length > 0 && hasFilters && (
+                                            <div className="mt-2">
+                                                <Button
+                                                    variant="link"
+                                                    onClick={clearFilters}
+                                                    className="h-auto p-0"
+                                                >
+                                                    Clear filters
+                                                </Button>
+                                            </div>
+                                        )}
                                     </TableCell>
                                 </TableRow>
-                            );
-                        })}
-
-                        {filteredIssues.length === 0 && (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={6}
-                                    className="h-28 text-center text-muted-foreground"
-                                >
-                                    {issues.length === 0
-                                        ? "No issues yet. Create your first issue."
-                                        : "No issues match your search or filters."}
-                                    {issues.length > 0 && hasFilters && (
-                                        <div className="mt-2">
-                                            <Button
-                                                variant="link"
-                                                onClick={clearFilters}
-                                                className="h-auto p-0"
-                                            >
-                                                Clear filters
-                                            </Button>
-                                        </div>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                            )}
+                        </TableBody>
+                    </Table>
+                )}
             </div>
 
             <IssueDetailsDialog
