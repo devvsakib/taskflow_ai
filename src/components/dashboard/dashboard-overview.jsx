@@ -82,17 +82,16 @@ export default function DashboardOverview({
 
             if (error) {
                 if (error.code === "23505") {
-                    toast.error(
+                    return toast.error(
                         "This project key is already in use in your workspace."
                     );
                 }
 
                 if (error.code === "42501") {
-                    toast.error(
+                    return toast.error(
                         "You don't have permission to create a project in this workspace."
                     );
                 }
-
                 toast.error(error.message || "Couldn't create the project.");
             }
             setCreateProjectOpen(false);
