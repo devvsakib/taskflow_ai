@@ -1,7 +1,6 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Search, Users, ShieldCheck, UserRound } from "lucide-react";
 
@@ -14,6 +13,8 @@ import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { LayoutDashboard, Mail, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 import {
     Dialog,
@@ -58,8 +59,40 @@ export function MembersPage({
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("member");
     const [isInviting, setIsInviting] = useState(false);
-
+    const [invitations, setInvitations] = useState([]);
+    const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
     const canInvite = ["owner", "admin"].includes(currentUserRole);
+
+    const fetchInvitations = useCallback(async () => {
+        if (!canInvite || !organization?.id) return;
+
+        setIsLoadingInvitations(true);
+
+        try {
+            const supabase = createClient();
+
+            const { data, error } = await supabase
+                .from("workspace_invitations")
+                .select("id, email, role, status, created_at")
+                .eq("organization_id", organization.id)
+                .eq("status", "pending")
+                .order("created_at", { ascending: false });
+
+            if (error) throw error;
+
+            setInvitations(data || []);
+        } catch (error) {
+            console.error("Failed to fetch invitations:", error);
+            toast.error("Unable to load pending invitations.");
+        } finally {
+            setIsLoadingInvitations(false);
+        }
+    }, [canInvite, organization?.id]);
+
+    useEffect(() => {
+        fetchInvitations();
+    }, [fetchInvitations]);
+
 
     const filteredMembers = useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -112,6 +145,8 @@ export function MembersPage({
             }
 
             toast.success(`Invitation sent to ${email}.`);
+            await fetchInvitations();
+
             setInviteEmail("");
             setInviteRole("member");
             setInviteOpen(false);
@@ -197,6 +232,75 @@ export function MembersPage({
                         </div>
                     </CardContent>
                 </Card>
+                {canInvite && (
+                    <Card className="gap-0 py-0">
+                        <div className="flex items-center justify-between p-4">
+                            <div>
+                                <h2 className="font-medium">Pending invitations</h2>
+                                <p className="text-sm text-muted-foreground">
+                                    People who have been invited but haven't joined yet.
+                                </p>
+                            </div>
+
+                            <Badge variant="secondary">
+                                {invitations.length}
+                            </Badge>
+                        </div>
+
+                        <Separator />
+
+                        {isLoadingInvitations ? (
+                            <p className="p-6 text-center text-sm text-muted-foreground">
+                                Loading invitations...
+                            </p>
+                        ) : invitations.length === 0 ? (
+                            <div className="px-6 py-10 text-center">
+                                <Mail className="mx-auto size-8 text-muted-foreground" />
+                                <p className="mt-3 font-medium">No pending invitations</p>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Invitations you send will appear here.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="divide-y">
+                                {invitations.map((invitation) => (
+                                    <div
+                                        key={invitation.id}
+                                        className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                                    >
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <Avatar className="size-10">
+                                                <AvatarFallback>
+                                                    {invitation.email?.[0]?.toUpperCase() || "U"}
+                                                </AvatarFallback>
+                                            </Avatar>
+
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-medium">
+                                                    {invitation.email}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Invited{" "}
+                                                    {format(
+                                                        new Date(invitation.created_at),
+                                                        "MMM d, yyyy"
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 pl-[52px] sm:pl-0">
+                                            <Badge variant="outline">
+                                                {roleConfig[invitation.role]?.label || "Member"}
+                                            </Badge>
+                                            <Badge variant="secondary">Pending</Badge>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </Card>
+                )}
             </div>
 
             <Card className="gap-0 py-0">
