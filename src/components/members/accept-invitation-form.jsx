@@ -69,7 +69,11 @@ export default function AcceptInvitationForm() {
             });
 
             if (passwordError) {
-                toast.error(passwordError.message);
+                if (passwordError.code === "same_password") {
+                    toast.error("Please choose a password different from your current password.");
+                } else {
+                    toast.error(passwordError.message);
+                }
                 return;
             }
 
@@ -87,8 +91,18 @@ export default function AcceptInvitationForm() {
                 );
 
             if (profileError) {
-                console.error("Profile update failed:", profileError.message);
                 toast.error("Your password was saved, but your profile could not be updated. Please try again.");
+                return;
+            }
+
+            const response = await fetch("/api/workspace/invitations/accept", {
+                method: "POST",
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                toast.error(result.error || "Unable to join the workspace.");
                 return;
             }
 
